@@ -1,0 +1,165 @@
+% Ce fichier main.tex est le fichier principal \`{a} partir duquel tout est g\'{e}n\'{e}r\'{e}
+% This file is the main file where the final document is generated
+\documentclass{these-dbl}
+
+% Remplir les metadonnees du pdf
+% Fill the pdf metadata
+\hypersetup{
+   pdfauthor   = {Hongwei Zhao},
+   pdftitle    = {Thesis of Hongwei},
+   pdfsubject  = {Th\`{e}se de doctorat de Hongwei Zhao},
+   pdfkeywords = {},
+   pdfstartview= {FitV}
+}
+
+\geometry{vmargin=4.0cm}
+\usepackage[intoc]{nomencl}
+\usepackage{listings}
+\lstset{
+  language=C,
+  xleftmargin=5mm,framexleftmargin=5mm,
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{blue},
+  commentstyle=\color{gray},
+  stringstyle=\color{red},
+  numbers=left,
+  numberstyle=\small\color{black},
+  stepnumber=1,
+  numbersep=5pt,
+  showspaces=false,
+  showstringspaces=false,
+  breaklines=true,
+  frame=single,
+  tabsize=4,
+  captionpos=b
+}
+\lstdefinelanguage{json}{
+    basicstyle=\ttfamily\footnotesize,
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    stepnumber=1,
+    numbersep=5pt,
+    showstringspaces=false,
+    breaklines=true,
+    frame=single,
+    backgroundcolor=\color{gray!10},
+    literate=
+     *{0}{{{\color{blue}0}}}{1}
+      {1}{{{\color{blue}1}}}{1}
+      {2}{{{\color{blue}2}}}{1}
+      {3}{{{\color{blue}3}}}{1}
+      {4}{{{\color{blue}4}}}{1}
+      {5}{{{\color{blue}5}}}{1}
+      {6}{{{\color{blue}6}}}{1}
+      {7}{{{\color{blue}7}}}{1}
+      {8}{{{\color{blue}8}}}{1}
+      {9}{{{\color{blue}9}}}{1}
+      {:}{{{\color{black}:}}}{1}
+      {,}{{{\color{black},}}}{1}
+      {"}{{{\color{red}"}}}{1},
+}
+\lstdefinelanguage{python}{
+  keywords={true,false,null,y,n},
+  keywordstyle=\color{blue},
+  basicstyle=\ttfamily\footnotesize,
+  sensitive=false,
+  comment=[l]{\#},
+  morecomment=[l]{\#},
+  commentstyle=\color{gray}\ttfamily,
+  stringstyle=\color{red},
+  moredelim=[l][\color{orange}]{:}
+}
+\makenomenclature
+\renewcommand\_{\textunderscore\allowbreak}
+
+% Spécifier vos fichiers de bibliographie
+% Specify you bibliography files here
+\addbibresource{./biblio/biblio.bib}
+\usepackage{minitoc}
+
+\usepackage{multirow}
+\usepackage[table,xcdraw]{xcolor}
+\usepackage{tabularx}
+\usepackage{amssymb}
+\usepackage{textgreek}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{longtable}
+\begin{document}
+
+% Page de garde avec commande \maketitle
+% Front cover calling \maketitle
+\input{./Couverture-these/pagedegarde}
+
+% Sélectionner la langue du contenu suivant cette ligne
+% Select the content language following this line
+\selectlanguage{french}
+\selectlanguage{english}
+
+\thispagestyle{empty}
+\pagenumbering{roman}
+
+% Inclusion du chapitre remerciement
+% Input acknowledgement chapter
+\clearemptydoublepage
+\input{./Acknowledgement/acknowledgement}
+
+% Ne pas oublier cette commande qui g\'{e}n\`{e}re la page de couverture avant
+% This command will generate the front cover
+\frontmatter
+\clearemptydoublepage
+\dominitoc
+
+\newpage
+\phantomsection
+\renewcommand{\contentsname}{Table of Contents}
+\addcontentsline{toc}{chapter}{Table of Contents}
+\tableofcontents %sommaire %table of content
+%\shorttableofcontents{Sommaire}{0}
+
+\clearemptydoublepage
+\pagenumbering{arabic}
+\setcounter{page}{1}
+\setcounter{mtc}{6}
+\mainmatter
+\input{./Introduction/introduction}
+
+\clearemptydoublepage
+\input{./Chapitre1/chapitre1}
+
+\clearemptydoublepage
+\input{./Chapitre2/chapitre2}
+
+\clearemptydoublepage
+\input{./Chapitre3/chapitre3}
+
+\clearemptydoublepage
+\input{./Chapitre4/chapitre4}
+
+\clearemptydoublepage
+\backmatter
+\input{./Conclusion/conclusion}
+
+\clearemptydoublepage
+\backmatter
+\appendix
+% \appendixpage
+\input{appendices/appendices}
+
+% Chapitre pour la bibliographie
+% Bibliography chapter
+\clearemptydoublepage
+\phantomsection % To have a correct link in the table of contents
+\addcontentsline{toc}{chapter}{Bibliography}
+
+% nocite: Pour citer la totalit\'{e} des r\'{e}f\'{e}rences contenues dans le fichier biblio
+% nocite: In order to cite all the references included biblio
+\printbibliography
+
+\clearemptydoublepage
+% Pour avoir la quatrième de couverture sur une page paire
+% To have the back cover on an even page
+\cleartoevenpage[\thispagestyle{empty}]
+\input{./Couverture-these/resume}
+
+\end{document}
