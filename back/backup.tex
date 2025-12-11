@@ -1,0 +1,187 @@
+\section*{Back up}
+
+\begin{frame}{Communication architecture under fault injection}
+        \begin{block}{}
+            \begin{itemize}
+                \item Exist article talk about EMP injection on the bus, point out the risk of bus~\cite{mishra2024faults}
+                \item More global research is needed 
+            \end{itemize}
+        \end{block}
+\end{frame}
+
+\begin{frame}{Why a Custom SoC?}
+    \begin{block}{Motivation}
+        \begin{itemize}
+            \item Vendor-locked SoCs lack transparency and configurability.
+            \item Need precise control over interconnects, memory, and processor interfaces.
+            \item Enable reproducible fault injection experiments.
+        \end{itemize}
+    \end{block}
+\end{frame}
+
+\begin{frame}{FISSA Workflow}
+    \begin{enumerate}
+        \item Parse configuration (JSON) and targets (YAML).
+        \item Generate TCL scripts for fault injection.
+        \item Run simulations and collect logs.
+    \end{enumerate}
+\end{frame}
+
+\begin{frame}{Configuration file}
+    \begin{columns}
+        \begin{column}{0.5\textwidth}
+        \begin{itemize}
+            \item path\_...: Defines simulator and all required file paths.
+            \item threat\_model: Selects the fault model (here: spatial bit-flip)
+            \item avoid\_register \& avoid\_log\_registers: Optional exclusion/log lists for registers (unused in our setup)
+            \item target\_window: Sets the fault-injection window based on VerifyPIN execution cycles
+            \item cycle\_ref: Specifies total cycles to observe the final authentication outcome
+            \item cpu\_period \& batch\_sim: Uses an 8 ns CPU period and groups 4000 simulations per batch
+        \end{itemize}
+        \end{column}
+    \begin{column}{0.5\textwidth}
+        \begin{figure}
+        \centering
+        \includegraphics[width=0.9\textwidth]{src/2/img/config.png}
+        \caption{config.json file}
+        \end{figure}
+    \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{Register file}
+    \begin{columns}
+        \begin{column}{0.4\textwidth}
+        \begin{itemize}
+            \item Each entry lists a full hierarchical register name.
+            \item A bit-width value specifies how many bits are injected.
+            \item Example: the signal \texttt{builder\_axirequestcounter0\_full} shown is configured as a 1-bit injection target.
+        \end{itemize}
+        \end{column}
+    \begin{column}{0.6\textwidth}
+        \begin{figure}
+        \centering
+        \includegraphics[width=0.9\textwidth]{src/2/img/yaml.png}
+        \caption{yaml file}
+        \end{figure}
+    \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{Global Vue}
+    \begin{itemize}
+        \item Table~\ref{Vunerabilities on 3 buses} compares outcomes for all fault models across Wishbone, AXI-Lite, and AXI.
+        \item More simulations are required as bus complexity increases (Wishbone → AXI-Lite → AXI).
+        \item Under simple models, Wishbone exhibits higher attack success, showing that simpler interconnects are easier to disrupt.
+        \item Subsequent analysis examines each successful register-fault combination in detail.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Precise analysis on AXI}
+    \begin{columns}
+        \begin{column}{0.4\textwidth}
+            \begin{itemize}
+                \item State register is the main target for successful attacks across all fault models.
+                \item completion flag register shows fewer successful attacks.
+            \end{itemize}
+        \end{column}
+    \begin{column}{0.6\textwidth}
+        \begin{table}
+        \centering
+        \caption{Distribution of successful register combination attacks under different fault models on the AXI Bus}
+        \label{Percentage on AXI}
+        \begin{tabularx}{\textwidth}{|l|X|X|X|}
+        \hline
+        Fault model & state & completion flag & completion flag \& state \\
+        \hline
+        Bit-flip & 75.00\% & 25\% & - \\
+        Manipulate Register & 83.33\% & 16.67\% & - \\
+        2 Bit-Flips & 60.00\% & 20\% & 20.00\% \\
+        Manipulate Two Registers & 83.13\% & 16.79\% & 0.08\% \\
+        \hline
+        \end{tabularx}
+        \end{table}
+    \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{Fault Effect Types}
+\begin{itemize}
+    \item Instruction skip: Faults (e.g., in ack) disrupt fetch timing, causing key instructions—such as the PIN comparison—to be skipped.
+    \item Data reset: Faults (e.g., in state) trigger error-handling behavior, resetting bus outputs to zero and making g\_cardPin appear equal to g\_userPin.
+    \item Data misread: Address-selection faults (e.g., in sel) cause reads from unintended modules, substituting variables like g\_userPin with g\_cardPin.
+    \item Data multiread: Faulty sel may enable multiple memories at once; merged outputs (e.g., ORed values) corrupt data used in authentication.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{SEL Under Attack}
+    \begin{columns}
+        \begin{column}{0.4\textwidth}
+        \begin{itemize}
+          \item \textbf{Data reset:} Fault forces \texttt{sel} = "0000", masking SRAM data with zeros.
+          \item \textbf{Data misread:} Single-bit error in \texttt{sel} causes ROM to be read instead of SRAM.
+          \item \textbf{Data multiread:} Multiple unintended bits set in \texttt{sel} (e.g., "1100"), CPU reads CSR + MAIN\_RAM simultaneously.
+        \end{itemize}
+        \end{column}
+    \begin{column}{0.6\textwidth}
+        \begin{figure}
+            \centering
+            \includegraphics[width=0.7\textwidth]{src/4/img/fault3.png}
+            \caption{Impact of sel signal on address, data signals and CPU cache without an attack}
+        \end{figure}
+    \end{column}
+    \end{columns} 
+\end{frame}
+
+\begin{frame}{Software Countermeasures Overview}
+\begin{itemize}
+  \item V7 showed the lowest fault injection success rate and highest detection capability.
+  \item Countermeasure complexity (code length, CCN, token count) correlated with longer execution time and larger fault surface.
+  \item Misaligned countermeasures (e.g., V4--V5) produced higher success rates than baseline, failing to intercept relevant fault paths.
+  \item None of the countermeasures fully neutralized the fault model impact.
+  \item Findings suggest need for granular analysis of countermeasure logic and deployment.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Grant and ACK Under Attack}
+    \begin{columns}
+        \begin{column}{0.4\textwidth}
+            \begin{itemize}
+              \item \texttt{grant} from 0 to 1, CPU begins to read from SRAM, ack1 becomes 1
+              \item \texttt{grant} becomes 1 one period before, so as ack1
+              \item Combine attack with ack0, cause ack\_d =1 during 2 periods, influence 2 data only during 1 period on the bus, cause the same fault as before.
+            \end{itemize}
+        \end{column}
+    \begin{column}{0.6\textwidth}
+        \begin{figure}
+            \centering
+            \includegraphics[width=0.8\textwidth]{src/4/img/fault2.png}
+            \caption{Impact of grant and acknowledge signal on address, data signals and CPU cache without an attack}
+        \end{figure}
+    \end{column}
+    \end{columns} 
+\end{frame}
+
+\begin{frame}{Software Countermeasures Overview}
+\begin{itemize}
+  \item V0 / V1: HB reduce little instruction fault.
+  \item V1 / V4: FTL and LC reduce less instruction fault than INL increases, LC reduce many data fault.
+  \item V4 / V5: Double-call reduce instruction fault and data fault.
+\end{itemize}
+
+\begin{table}
+  \centering
+  \label{tab:fault analysis}
+\small
+\begin{tabular}{llrr}
+\hline
+Benchmark version & CM implemented & \multicolumn{1}{l}{Instruction success times} & \multicolumn{1}{l}{Data success times} \\
+\hline
+V0 & - & 20 & 17 \\
+V1 & HB & 19 & 17 \\
+V4 & HB+FTL+INL+DPTC+PTCBK+LC & 26 & 5 \\
+V5 & HB+FTL+DPTC+DC & 4 & 5 \\
+\hline
+\end{tabular}
+\end{table}
+\end{frame}

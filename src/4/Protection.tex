@@ -1,0 +1,441 @@
+\section{Protection Implementation on Wishbone Bus}
+
+\subsection{Wishbone Vulnerabilities}
+\begin{frame}{Critical Signals Under Attack}
+    \begin{itemize}
+        \item \texttt{ack}: 4-bit register, controlled by sel register, cyc/stb signal, assign to ack\_d and ack\_i
+        \item \texttt{sel}: 4-bit register, assigned by adr register
+        \item \texttt{grant}: arbitration register for ack\_d/ack\_i, etc
+        
+    \end{itemize}
+
+    \begin{columns}
+        \begin{column}{0.55\textwidth}
+        \begin{figure}
+            \centering
+            \includegraphics[width=0.7\textwidth]{src/3/img/wishbone bus.png}
+        \end{figure}
+        \end{column}
+    \begin{column}{0.45\textwidth}
+        \begin{table}
+        \centering
+        \caption{Distribution of successful register combination attacks under different fault models on the Wishbone Bus}
+        \label{Percentage on Wishbone}
+          \resizebox{\columnwidth}{!}{
+        \begin{tabular}{lcccc}
+        \hline
+        Fault model & \texttt{ack} & \texttt{sel} & \texttt{ack} \& \texttt{grant} & \texttt{ack} \& \texttt{sel} \\ 
+        \hline
+        Bit-flip & 94.59\% & 5.41\% & - & - \\
+        Manipulate Register & 81.40\% & 18.60\% & - & - \\
+        2 Bit-Flips & 94.12\% & 3.68\% & 1.10\% & 1.10\% \\
+        Manipulate Two Registers & 85.73\% & 12.34\% & 0.38\% & 1.55\% \\
+        \hline
+        \end{tabular}
+        }
+        \end{table}
+    \end{column}
+    \end{columns} 
+    
+\end{frame}
+
+\begin{frame}{ACK Under Attack}
+    \begin{columns}
+        \begin{column}{0.4\textwidth}
+          \textbf{Normal behavior:}
+            \begin{itemize}
+              \item \texttt{ack1} toggles each cycle while other \texttt{ack} signals remain low.
+              \item \texttt{ack\_d} updates both address and data every two cycles.
+              \item CPU sequentially reads values and commits them to cache.
+            \end{itemize}
+        \end{column}
+    \begin{column}{0.6\textwidth}
+        \begin{figure}
+            \centering
+            \includegraphics[width=0.9\textwidth]{src/4/img/nofault1.png}
+            \caption{Impact of acknowledge signal on address, data signals and CPU cache without an attack}
+        \end{figure}
+    \end{column}
+    \end{columns} 
+\end{frame}
+
+\begin{frame}{ACK Under Attack}
+    \begin{columns}
+        \begin{column}{0.4\textwidth}
+          \textbf{Faulted behavior:}
+            \begin{itemize}
+              \item A bit-flip on \texttt{ack0} disrupts the expected read timing.
+              \item Two-cycle transfers collapse into a single cycle, causing premature cache allocation.
+              \item Cache lines are filled with corrupted values (e.g., PIN replaced by zeros).
+              \item The program compares identical PINs and incorrectly grants access.
+              \item It corresponds to an Instruction skip
+            \end{itemize}
+        \end{column}
+        \begin{column}{0.6\textwidth}
+            \begin{figure}
+                \centering
+                \includegraphics[width=0.9\textwidth]{src/4/img/fault1.png}
+                \caption{Impact of acknowledge signal on address, data signals and CPU cache with an attack}
+            \end{figure}
+        \end{column}
+    \end{columns} 
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Software Countermeasures}
+
+\begin{frame}{Countermeasure Deployment}
+\begin{table}
+\centering
+  \caption{Software countermeasures deployed in each benchmark version}
+  \label{tab:benchmark cm}
+  \begin{tabular}{cccccccccc}
+    \hline
+    & HB & FTL & INL & DPTC & PTCBK & LC & DC & DT & SC\\
+    \hline
+    \texttt{V0} & & & & & & & & &  \\
+    \texttt{V1} & \checkmark & & & & & & & &  \\
+    \texttt{V2} & \checkmark & \checkmark & & & & & & & \\
+    \texttt{V3} & \checkmark & \checkmark & \checkmark & & & & & & \\
+    \texttt{V4} & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark & & &\\
+    \texttt{V5} & \checkmark & \checkmark & & \checkmark & & & \checkmark & &  \\
+    \texttt{V6} & \checkmark & \checkmark & \checkmark & \checkmark & & & & \checkmark &  \\
+    \texttt{V7} & \checkmark & \checkmark & \checkmark & \checkmark & & & & \checkmark & \checkmark\\
+    \hline
+  \end{tabular}
+\end{table}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Software Countermeasure Results}
+\begin{frame}{Fault Injection Results et Resource Analysis Lizard (Software)}
+\begin{itemize}
+  \item 8 versions of the benchmark with/without software countermeasure
+  \item Fault model: Bitflip
+  \item Lizard: analysis NLOC, CCN, token
+\end{itemize}
+\begin{table}
+\captionsetup{skip=10pt}
+  \centering
+  \label{tab:benchmark result}
+  \resizebox{\textwidth}{!}{%
+\begin{tabular}{cccccccccccc}
+\hline
+& crash & detect & success & change & silence & success rate & detect rate & sum & NLOC & CCN & token \\
+\hline
+V0 & 47 & 0 & 37 & 124 & 2366 & 1.44\% & 0 & 2574 & 32 & 6 & 107 \\
+V1 & 61 & 21 & 36 & 136 & 3266 & 1.02\% & 0.60\% & 3520 & 36 & 7 & 127 \\
+V2 & 98 & 20 & 30 & 164 & 5078 & 0.56\% & 0.37\% & 5390 & 44 & 8 & 149 \\
+V3 & 58 & 19 & 31 & 96 & 3789 & 0.78\% & 0.48\% & 3993 & 32 & 7 & 129 \\
+V4 & 92 & 101 & 33 & 104 & 5478 & 0.57\% & 1.74\% & 5808 & 47 & 11 & 191 \\
+V5 & 105 & 28 & 9 & 153 & 5238 & 0.16\% & 0.51\% & 5533 & 42 & 9 & 163 \\
+V6 & 61 & 49 & 14 & 108 & 4377 & 0.30\% & 1.06\% & 4609 & 38 & 9 & 153 \\
+V7 & 105 & 186 & 9 & 252 & 6708 & 0.12\% & 2.56\% & 7260 & 77 & 18 & 312\\       
+\hline                          
+\end{tabular}
+}
+\end{table}
+\end{frame}
+
+\begin{frame}{Software Countermeasures Overview}
+  Instruction protection:
+\begin{itemize}
+  \item HB: Prevents register values defaulting to 0/1, mitigating some branch instruction.
+  \item FTL/LC: Fixes/Records  loop iteration count, blocking loop manipulation.
+  \item INL: Merges functions can't reduce fault.
+  \item DPTC/PTCBK: State counters not targeted, no effective defense observed.
+  \item DC/DT: Redundant execution neutralizes function-call attacks.
+  \item SC: Detects skipped instructions, effective against instruction-skipping.
+\end{itemize}
+  Data protection: Only INL (fewer reads) and DC (double read) provide defense.
+\begin{table}
+  \caption{Evaluation of software countermeasures against fault attacks on instructions and data}
+  \label{tab:cm evaluate}
+  \resizebox{\columnwidth}{!}{
+\begin{tabular}{lccccccccc}
+\hline
+& HB & FTL & INL & DPTC & PTCBK & LC & DC & DT & SC \\
+\hline
+Instruction fault & \cmark & \cmark & \xmark & \xmark & \xmark & \cmark & \cmark & \cmark & \cmark \\
+Data fault        & \xmark & \xmark & \cmark & \xmark & \xmark & \xmark & \cmark & \xmark & \xmark\\
+\hline
+\end{tabular}
+}
+\end{table}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Hardware Countermeasures}
+\begin{frame}{Hardware Countermeasures Overview}
+\begin{columns}
+  \column{0.5\textwidth}
+  \begin{itemize}
+    \item Software-only defenses are limited, Hardware countermeasures are needed.
+    \item Architectural change: combi=> mux, reducing multiple-read attacks.
+    \item Hardware protections on \texttt{ack} and \texttt{sel} registers.
+  \end{itemize}
+
+  \column{0.5\textwidth}
+  \begin{figure}
+    \centering
+    \includegraphics[width=\textwidth]{src/4/img/change arch.png}
+    \caption{Optimized connection between the selection register and the memory using multiplexers}
+  \end{figure}
+\end{columns}
+\end{frame}
+
+\begin{frame}{Hardware Countermeasures Overview}
+\begin{itemize}
+\item Simple Parity: Detects faults using a 1-bit parity code.
+\item Duplication: Creates a duplicate of the registers and compares it with the unprotected version. 
+\item Complementary Duplication: Duplicates the inverse of the registers and compares it with the unprotected version.
+\item Hamming Code: Corrects the output signal of a register using a 3-bit checksum.
+\item SECDED Code: Corrects or detects errors using a 4-bit checksum.
+\item Triplication: Duplicates a register twice, correcting the signal if two registers have matching outputs and detecting errors if all three differ.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}{Results of Hardware Countermeasure with VerifyPin V0}
+\begin{table}
+\captionsetup{skip=10pt}
+\centering
+  \label{tab:v0 under attack result}
+\scalebox{0.6}{
+\begin{tabular}{llccc}
+\hline
+Countermeasure & Fault model & Success rate & Detection rate & Correction rate \\
+\hline
+ & Bit-Flip & 1.44\% & - & - \\
+ & Manipulate Register & 0.61\% & - & - \\
+ & 2 Bit-Flips & 2.11\% & - & - \\
+\multirow{-4}{*}{Unprotected} & Manipulate Two Registers  & 1.08\%  & - & - \\
+\hline
+ & Bit-Flip & 0\% & 69.54\% & - \\
+ & Manipulate Register & 0.04\% & 34.77\% & - \\
+ & 2 Bit-Flips & 0.89\% & 64.38\% & - \\
+\multirow{-4}{*}{Simple parity} & Manipulate Two Registers & 0.27\% & 50.34\% & - \\
+\hline
+ & Bit-Flip & 0\% & 77.66\% & - \\
+ & Manipulate Register & 0\% & 44.94\% & - \\
+ & 2 Bit-Flips & 0.15\% & 86.43\% & - \\
+\multirow{-4}{*}{Duplication} & Manipulate Two Registers & 0.04\% & 66.46\% & - \\
+\hline
+ & Bit-Flip & 0\% & 77.66\% & - \\
+Complementary & Manipulate Register & 0\% & 44.94\% & - \\
+Duplication & 2 Bit-Flips & 0.15\% & 86.43\% & - \\
+ & Manipulate Two Registers & 0.04\% & 66.46\% & - \\
+\hline
+ & Bit-Flip & 0\% & - & 80\% \\
+ & Manipulate Register & 0.49\% & - & 58.16\% \\
+ & 2 Bit-Flips & 0.97\% & - & 91.30\% \\
+\multirow{-4}{*}{Hamming code} & Manipulate Two Registers & 1.01\% & - & 75.95\% \\
+\hline
+ & Bit-Flip & 0\% & 0\% & 85.71\% \\
+ & Manipulate Register & 0\% & 0\% & 81.82\% \\
+ & 2 Bit-Flips & 0.23\% & 20\% & 76.94\% \\
+\multirow{-4}{*}{Triplication} & Manipulate Two Registers & 0.14\% & 36.74\% & 58.97\% \\
+\hline
+ & Bit-Flip & 0\% & 11.77\% & 70.59\% \\
+ & Manipulate Register & 0.32\% & 34\% & 37.92\% \\
+ & 2 Bit-Flips & 0\% & 45.56\% & 52.06\% \\
+\multirow{-4}{*}{Secded code} & Manipulate Two Registers & 0.45\% & 51.94\% & 36.19\% \\
+\hline
+\end{tabular}
+}
+\end{table}
+\end{frame}
+
+% \begin{frame}{Hardware Countermeasures Overview}
+% \begin{itemize}
+%   \item Duplication / complementary duplication: lower success rates, higher detection probability.
+%   \item SECDED (Hamming code): strong correction, effective against dual-bit faults across registers.
+%   \item Triplication: best for single-bit errors and localized multi-bit corruption.
+%   \item All methods defend against single bit-flip.
+%   \item Duplication, complementary duplication, triplication: effective for multi-bit faults in one register.
+%   \item SECDED: defends against two bit-flips.
+%   \item No method fully prevents multi-register multi-bit faults; triplication performs better.
+%   \item Vulnerabilities:
+%     \begin{itemize}
+%       \item Simple parity: weak against two bit-flips (parity + signal line).
+%       \item SECDED: vulnerable to multi-register manipulations, possible false corrections.
+%       \item Duplication / complementary duplication / triplication: susceptible to two bit-flips mirroring errors.
+%     \end{itemize}
+% \end{itemize}
+% \end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Hardware Resource Overhead}
+\begin{frame}{Resource Overhead Analysis}
+\begin{itemize}
+  \item Countermeasures increase LUT usage by max. 0.7\%.
+  \item Frequency reduced by up to 0.97\%.
+  \item Differences largely due to synthesizer auto-optimization.
+  \item Overall: negligible additional hardware resource loss.
+\end{itemize}
+
+\begin{table}
+    \centering
+  \caption{Hardware resource overhead of each hardware countermeasure (LUT, Flip-Flop, frequency)}
+  \label{tab:countermeasures synthesis}
+\begin{tabular}{cccc}
+\hline
+Countermeasure & LUT & Flip-Flops & frequency (MHz) \\
+\hline
+Unprotected & 2198 & 1793 & 70.13 \\
+Simple parity & 2214 & 1791 & 70.27 \\
+Duplication & 2201 & 1791 & 70.18 \\
+Complimentary & 2199 & 1791 & 70.37 \\
+Hamming code & 2199 & 1794 & 70.32 \\
+Triplication & 2199 & 1791 & 70.27 \\
+Secded code & 2193 & 1789 & 69.44 \\
+\hline
+\end{tabular}
+\end{table}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Compare Countermeasures}
+\begin{frame}{Comparison of the Protection Effectiveness}
+\begin{itemize}
+  \item Hardware-only protections achieve consistently lower attack success rates.
+  \item In some fault models, hardware countermeasures reduce success rate to zero.
+\end{itemize}
+
+    \begin{columns}
+        \begin{column}{0.5\textwidth}
+        \begin{figure}
+          \centering
+          \includegraphics[width=0.7\linewidth]{src/4/img/hw rate.png}
+          \caption{Success rates under the four fault models for the benchmark V0 with different hardware countermeasures}
+          \label{hw cmp}
+        \end{figure}
+        \end{column}
+    \begin{column}{0.5\textwidth}
+        \begin{figure}[H]
+          \centering
+          \includegraphics[width=0.7\linewidth]{src/4/img/sw rate.png}
+          \caption{Success rates under the four fault models for the seven benchmark versions with software countermeasures}
+          \label{sw cmp}
+        \end{figure}
+    \end{column}
+    \end{columns} 
+\end{frame}
+
+\begin{frame}{Comparison of the Protection Effectiveness}
+    \begin{columns}
+        \begin{column}{0.5\textwidth}
+        \begin{itemize}
+          \item Figure~\ref{hwsw combine}: clear improvement with duplication + software vs. duplication alone.
+          \item No hardware/software combination fully neutralizes the Manipulate Two Registers fault model.
+          \item Persistent vulnerability indicates need for more advanced or hybridized protection beyond duplication/redundancy.
+        \end{itemize}
+        \end{column}
+    \begin{column}{0.5\textwidth}
+        \begin{figure}
+          \centering
+          \includegraphics[width=0.99\linewidth]{src/4/img/duplication.png}
+          \caption{Success rates under the four fault models for the seven benchmark versions with software and/without duplication countermeasures}
+          \label{hwsw combine}
+        \end{figure}
+    \end{column}
+    \end{columns} 
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Proposed Triple-Redundant Countermeasure}
+\begin{frame}{Proposed Architecture}
+\begin{columns}[c]
+  \column{0.5\textwidth}
+  \begin{itemize}
+    \item Purely hardware-based countermeasure for reliability and efficiency
+    \item Detection-only strategy (higher accuracy, modest correction trade-off)
+    \item Applied to \texttt{ack}, \texttt{sel}, and \texttt{grant} registers
+  \end{itemize}
+
+  \column{0.5\textwidth}
+  \begin{figure}
+    \centering
+    \includegraphics[width=0.9\textwidth]{src/4/img/cm tri.png}
+    \caption{Triplication-redundant detection scheme}
+  \end{figure}
+\end{columns}
+\end{frame}
+
+\begin{frame}{Proposed Countermeasure Results}
+\begin{table}
+  \centering
+  \label{tab:our cm}
+  \scalebox{0.5}{
+\begin{tabular}{llccccc}
+\hline
+Countermeasure & Fault model & crash & detect\_hw & success & change & silence \\
+\hline
+& Bit-Flip & 86 & 4828 & 0 & 0 & 468 \\
+& Manipulate Register & 125 & 5491 & 0 & 0 & 5148 \\
+& 2 Bit-Flips & 2007 & 56961 & 0 & 0 & 234 \\
+\multirow{-4}{*}{triplication-redundant v0} & Manipulate Two Registers & 5498 & 174916 & 0 & 0 & 53586 \\
+\hline
+& Bit-Flip & 109 & 6611 & 0 & 0 & 640 \\
+& Manipulate Register & 161 & 7519 & 0 & 0 & 7040 \\
+& 2 Bit-Flips & 2572 & 78068 & 0 & 0 & 320 \\
+\multirow{-4}{*}{triplication-redundant v1} & Manipulate Two Registers & 7106 & 239614 & 0 & 0 & 73280 \\
+\hline
+& Bit-Flip & 170 & 10120 & 0 & 0 & 980 \\
+& Manipulate Register & 242 & 11518 & 0 & 0 & 10780 \\
+& 2 Bit-Flips & 3879 & 119601 & 0 & 0 & 490 \\
+\multirow{-4}{*}{triplication-redundant v2} & Manipulate Two Registers & 10544 & 367246 & 0 & 0 & 112210 \\
+\hline
+& Bit-Flip & 102 & 7521 & 0 & 0 & 726 \\
+& Manipulate Register & 150 & 8562 & 0 & 0 & 7986 \\
+& 2 Bit-Flips & 2366 & 89110 & 0 & 0 & 363 \\
+\multirow{-4}{*}{triplication-redundant v3} & Manipulate Two Registers & 6574 & 273299 & 0 & 0 & 83127 \\
+\hline
+& Bit-Flip & 174 & 10914 & 0 & 0 & 1056 \\
+& Manipulate Register & 256 & 12416 & 0 & 0 & 11616 \\
+& 2 Bit-Flips & 4046 & 129010 & 0 & 0 & 528 \\
+\multirow{-4}{*}{triplication-redundant v4} & Manipulate Two Registers & 11228 & 395860 & 0 & 0 & 120912 \\
+\hline
+& Bit-Flip & 177 & 10386 & 0 & 0 & 1006 \\
+& Manipulate Register & 249 & 11823 & 0 & 0 & 11066 \\
+& 2 Bit-Flips & 3999 & 122757 & 0 & 0 & 503 \\
+\multirow{-4}{*}{triplication-redundant v5} & Manipulate Two Registers & 11822 & 375991 & 0 & 0 & 115187 \\
+\hline
+& Bit-Flip & 115 & 8684 & 0 & 0 & 838 \\
+& Manipulate Register & 169 & 9887 & 0 & 0 & 9218 \\
+& 2 Bit-Flips & 2684 & 102904 & 0 & 0 & 419 \\
+\multirow{-4}{*}{triplication-redundant v6} & Manipulate Two Registers & 7424 & 315625 & 0  & 0 & 95951 \\
+\hline
+& Bit-Flip & 200 & 13660 & 0 & 0 & 1320 \\
+& Manipulate Register & 295 & 15545 & 0 & 0 & 14520 \\
+& 2 Bit-Flips & 4683 & 161637 & 0 & 0 & 660 \\
+\multirow{-4}{*}{triplication-redundant v7} & Manipulate Two Registers & 16041 & 492819 & 0 & 0 & 151140 \\         
+\hline             
+\end{tabular}
+}
+\end{table}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}{Resource Overhead of the Proposed Design}
+\begin{itemize}
+  \item LUT utilization increases by 0.36\%.
+  \item Maximum operating frequency increases by 0.48\%.
+  \item Changes attributed to Vivado synthesis/optimization heuristics.
+  \item Overall practicality of the design remains unaffected.
+\end{itemize}
+
+\begin{table}
+\centering
+%\scriptsize
+\caption{Triplication-redundant resource usage}
+\begin{tabular}{lccc}
+\hline
+Countermeasure & LUT & Flip-Flops & Frequency (MHz) \\
+\hline
+Unprotected & 2198 & 1793 & 70.13 \\
+Triplication-redundant & 2206 & 1791 & 70.47 \\
+\hline
+\end{tabular}
+\end{table}
+\end{frame}

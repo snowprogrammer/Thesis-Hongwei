@@ -1,0 +1,138 @@
+\section*{Introduction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Context}
+\begin{frame}{Context: Embedded Systems}
+    \begin{minipage}[c]{0.45\textwidth}
+        \begin{block}{Embedded Systems}
+            \begin{itemize}
+                \setbeamertemplate{itemize items}[square]
+                \justifying
+                \item Wide range of applications
+                \item Fast growing market
+                \item Increasingly vulnerable to multiple threats
+            \end{itemize}
+        \end{block}
+        \begin{figure}
+            \centering
+            \includegraphics[width=0.7\textwidth]{src/1/img/em.png}
+            \caption{Embedded systems (from~\cite{DesignSpark_EmbeddedSystem_2022})}
+        \end{figure}
+    \end{minipage}\hfill%
+    \begin{minipage}[c]{0.55\textwidth}
+        \begin{figure}
+            \centering
+            \includegraphics[width=0.8\textwidth]{src/1/img/market.jpg}
+            \caption{Embedded systems market trend (from~\cite{statista_iot})}
+            \label{fig:nbr_iot}
+        \end{figure}
+    \end{minipage}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}{Context: Embedded Systems Under Attack}
+    \begin{block}{Threats}
+        \begin{itemize}
+            \setbeamertemplate{itemize items}[square]
+            \justifying
+            \item Software attacks: memory overflow~\cite{1467812}, buffer overflow~\cite{821514}, control hijacking, etc.
+            \item Hardware attacks: Reverse Engineering~\cite{varady1997reverse}, Side-Channel Attacks~\cite{kelsey1998side}, Fault Injection Attacks~\cite{hsueh1997fault}
+        \end{itemize}
+    \end{block}
+
+    \begin{center}
+        \begin{minipage}[r]{.55\textwidth}
+            \begin{figure}
+                \centering
+                \includegraphics[width=\textwidth]{src/1/img/threats.jpg}
+            \end{figure}
+        \end{minipage}\hspace{.5cm}%
+        \begin{minipage}[c]{0.3\textwidth}
+            \captionof{figure}{Possible methods of attacks on embedded systems~\cite{somco-embedded-cybersecurity}}
+        \end{minipage}
+    \end{center}
+\end{frame}
+
+%Comentaire Guy : ajouter un slide pour introduire les attaques en faute et un SoC pour montrer le bus de communication.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Communication architecture under fault injection attacks}
+\begin{frame}{Communication architecture under fault injection attacks}
+    \begin{minipage}[c]{0.35\linewidth}
+        \begingroup
+        \begin{block}{SoC}
+            \begin{itemize}
+                \item Major realization of embedded systems, also vulnerable to fault attacks \cite{trouchkine2021soc}
+                \item Build with different parts, bus as connection and control 
+            \end{itemize}
+        \end{block}
+        \endgroup
+    \end{minipage}\hfill%
+    \begin{minipage}[c]{0.6\linewidth}
+        \begin{figure}
+            \centering
+            \begin{figure}
+                \centering
+                \includegraphics[width=0.7\textwidth]{src/1/img/soc.jpg}
+            \end{figure}
+            \label{fig:schemaDIFT}
+            \caption{SoC architecture~\cite{mathworks-soc-architecture}}
+        \end{figure}
+    \end{minipage}
+\end{frame}
+
+\begin{frame}{Communication architecture under fault injection}
+    \begin{block}{}
+        \begin{itemize}
+            \setbeamertemplate{itemize items}[square]
+            \justifying
+            \item Fault injection attacks: physical modification of data(laser, EM, tension ...) 
+            \item Attack on CPU and memory can be solved by integrity mechanisms \cite{burow2017control}
+            \item Bus can control the data transfer, vulnerable under fault injection attacks \cite{sun2011design}
+        \end{itemize}
+    \end{block}
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.4\textwidth]{src/1/img/fia.png}
+        \caption{Different injection methods~\cite{fissa}}
+    \end{figure}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Motivations}
+\begin{frame}{Motivations}
+    \begin{block}{Vulnerabilities into critical bus}
+        \begin{itemize}
+            \item Buses are fundamental to SoC functionality
+            \item Their standardized and predictable behavior makes them attractive fault-injection targets.
+        \end{itemize}
+    \end{block}
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Research challenge}
+\begin{frame}{Research challenge}
+        \begin{itemize}
+            \item Identifying vulnerabilities across different protocols and handshake semantics
+            \item Analyzing realistic fault effects at the RTL level within complex interconnects
+            \item Designing countermeasures that remain effective without incurring prohibitive hardware overhead
+        \end{itemize}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Objectives}
+\begin{frame}{Objectives of this PhD Thesis}
+    \begin{block}{}
+        \begin{itemize}
+            \setbeamertemplate{itemize items}[triangle]
+            \justifying
+            \item Analyze the behavior of Wishbone, AXI-Lite, and AXI under fault injection attacks
+            \item Evaluate existing hardware and software countermeasures to determine their practical limitations
+            \item Propose and validate a hardware-integrated countermeasure that can detect bus-level faults
+        \end{itemize}
+    \end{block}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

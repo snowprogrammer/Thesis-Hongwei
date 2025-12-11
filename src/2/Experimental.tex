@@ -1,0 +1,172 @@
+\section{Experimental Setup}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Construction of the SoC}
+
+\begin{frame}{LiteX Framework}
+    \begin{columns}
+        \begin{column}{0.45\textwidth}
+        \begin{itemize}
+            \item Open-source SoC builder for FPGA-based systems \cite{litex}.
+            \item Modular design with Python-based HDL (Migen).
+            \item Supports several processor architectures (e.g. RISC-V).
+            \item No built-in security → interesting to explore vulnerability analysis in this functional-oriented architecture.
+        \end{itemize}
+    \end{column}
+    \begin{column}{0.55\textwidth}
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.7\textwidth]{src/2/img/litex.png}
+        \caption{LiteX framework components}
+    \end{figure}    
+    \end{column}
+    \end{columns}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{SoC Configuration}
+\begin{frame}{SoC Architecture Overview}
+    \begin{itemize}
+        \item CPU: VexRiscv (RISC-V ISA).
+        \item Interconnect protocols: Wishbone, AXI-Lite, AXI.
+        \item Memory regions: ROM, SRAM, CSR, MAIN\_RAM.
+        \item Target FPGA: Digilent Basys3 (Artix-7).
+    \end{itemize}
+\begin{figure}
+    \centering
+    \includegraphics[width=0.4\textwidth]{src/2/img/socgeneral.png}
+    \caption{Our SoC architecture}
+\end{figure}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Benchmark}
+\begin{frame}{VerifyPin Benchmark}
+    \begin{itemize}
+        \item Written in C \cite{DureuilPPLCC16}.
+        \item Simulates a PIN verification process.
+        \item Suite of 8 implementations: V0 (unprotected) + V1–V7 (protected).
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{VerifyPin V0 Example}
+    \begin{columns}
+        \begin{column}{0.5\textwidth}
+        \begin{itemize}
+            \item Compares user PIN (\texttt{"0000"}) with card PIN (\texttt{"4321"}).
+            \item Fault success: \texttt{g\_authenticated} set to 1 despite mismatch.
+        \end{itemize}
+        \end{column}
+    \begin{column}{0.5\textwidth}
+        \begin{figure}
+        \centering
+        \includegraphics[width=0.9\textwidth]{src/2/img/v0.png}
+        \caption{C code of VerifyPin function in benchmark V0}
+        \end{figure}
+    \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{Countermeasures implemented in V1 to V7}
+\begin{itemize}
+  \item HB: Hardened Boolean
+  \item FTL: Fixed-Time Loop
+  \item INL: Inlined Function
+  \item DPTC/PTCBK: Token Counter decremented first/Back up
+  \item LC: Loop Counter
+  \item DC/DT: Double Call/Test
+  \item SC: Step Counter
+\end{itemize}
+\end{frame}
+
+\begin{frame}{VerifyPin V1 Example}
+    \begin{columns}
+        \begin{column}{0.5\textwidth}
+        \begin{itemize}
+            \item Implement with Hardened Boolean.
+            \item Replace 1 and 0 with BOOL\_True(0xAA) and BOOL\_False(0x55).
+            \item Detect fault => execute countermeasure()
+        \end{itemize}
+        \end{column}
+    \begin{column}{0.5\textwidth}
+        \begin{figure}
+        \centering
+        \includegraphics[width=0.9\textwidth]{src/2/img/v1.png}
+        \caption{C code of VerifyPin function in benchmark V1}
+        \end{figure}
+    \end{column}
+    \end{columns}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{FISSA Tool}
+\begin{frame}{FISSA Overview}
+    \begin{itemize}
+        \item Python-based tool for fault injection campaigns \cite{fissa}.
+        \item Works with HDL simulators (Questasim, Vivado, Verilator).
+        \item Automates TCL script generation and simulation logging.
+    \end{itemize}
+\begin{figure}
+    \centering
+    \includegraphics[width=0.8\textwidth]{src/2/img/fissa.png}
+    \caption{FISSA components}
+\end{figure}
+\end{frame}
+
+\begin{frame}{Register lists}
+    \begin{itemize}
+        \item Non-control registers (I/O, LEDs, clock/reset, timers, program data) were excluded due to low injection effectiveness.
+        \item Fault injection was applied to Wishbone, AXI-Lite, and AXI under multiple fault models.
+    \end{itemize}
+        
+    \begin{table}
+    \centering
+    \caption{All the registers targeted by fault injection in the 3 buses}
+    \label{inject reg}
+    \resizebox{\textwidth}{!}{
+    \begin{tabular}{|l|l|}
+    \hline
+    Bus & Registers \\
+    \hline
+    Wishbone & ACK, SEL, done, grant \\
+    AXI-Lite & state, selection driver, last\_was\_read, rr\_read\_grant, completion flags \\
+    AXI & same with AXI-Lite, ax\_beat\_first, ax\_beat\_last, last\_ar\_aw\_n, pipe\_valid\_source \\
+    \hline
+    \end{tabular}}
+    \end{table}
+\end{frame}
+
+\begin{frame}{Considered Fault Models}
+    \begin{enumerate}
+        \item Bit-Flip: single bit in register.
+        \item Manipulate Register: arbitrary bit-flips in one register.
+        \item 2 Bit-Flips: exactly two bits flipped.
+        \item Manipulate Two Registers: arbitrary bit-flips in two registers.
+    \end{enumerate}
+\begin{figure}
+    \centering
+    \includegraphics[width=0.8\textwidth]{src/2/img/fault model.png}
+    \caption{Illustration of our fault models}
+\end{figure}
+\end{frame}
+
+\begin{frame}{Outcome Categories}
+    \begin{itemize}
+        \item Crash: simulation terminated.
+        \item Software detection: software countermeasure to detect the fault.
+        \item Hardware detection: hardware countermeasure to detect the fault.
+        \item Hardware correction: hardware countermeasure to correct the fault.
+        \item Success: unauthorized authentication achieved.
+        \item Change: memory state altered.
+        \item Silence: no visible impact.
+    \end{itemize}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Fault Models}
+\begin{frame}{Fault Injection Campaign}
+    \begin{itemize}
+        \item Attacker has no PIN knowledge.
+        \item Attacker has knowledge of the bus architecture.
+        \item Faults injected at the RTL level via simulation.
+        \item Target: control registers connected to the system bus.
+    \end{itemize}
+\end{frame}

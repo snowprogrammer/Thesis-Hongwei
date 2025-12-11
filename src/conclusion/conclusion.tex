@@ -1,0 +1,40 @@
+\section{Conclusion}
+
+\subsection{Synthesis}
+\begin{frame}{Key Contributions}
+    \begin{itemize}
+        \item Identified vulnerabilities in SoC buses (Wishbone, AXI-Lite, AXI).
+        \item Developed experiment framework using LiteX + VerifyPin + FISSA.
+        \item Demonstrate limitation of software countermeasure
+        \item Proposed hardware-based countermeasure for the Wishbone bus.
+        \item Demonstrated full protection under evaluated fault models.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Experimental Highlights}
+    \begin{itemize}
+        \item Over 40 million simulations executed on 3 Xeon Gold servers. 
+        \item Total campaign duration: more than 2 months.
+    \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Global Reflection}
+\begin{frame}{Global Reflection}
+    \begin{itemize}
+        \item Bus-level vulnerabilities exist across Wishbone, AXI-Lite, AXI.
+        \item Real-world SoCs lack built-in protection for handshake signals.
+        \item Multi-bit fault injection remains a realistic threat with advanced equipment.
+    \end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Perspectives}
+\begin{frame}{Future Directions}
+    \begin{itemize}
+        \item Apply countermeasures to AXI-Lite and AXI buses.
+        \item Combine advanced protections (CFI, runtime checks) against both software/hardware attack.
+        \item Integrate protection into LiteX to add the security dimension.
+        \item Evaluate NoC-based architectures under fault injection attacks.
+    \end{itemize}
+\end{frame}

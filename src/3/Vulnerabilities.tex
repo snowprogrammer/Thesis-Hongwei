@@ -1,0 +1,190 @@
+\section{Vulnerabilities Exploitation on Bus}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Wishbone Protocol}
+\begin{frame}{Handshake in Wishbone}
+    \begin{columns}
+        \begin{column}{0.4\textwidth}
+            \begin{itemize}
+                \item Acknowledge generation: ack register controls acknowledge signal in CPU
+                \item Selection mechanism: selection registers selects memory 
+            \end{itemize}
+        \end{column}
+    \begin{column}{0.6\textwidth}
+        \begin{figure}
+            \centering
+            \includegraphics[width=0.7\textwidth]{src/3/img/wishbone bus.png}
+            \caption{ACK and SEL register connections on Wishbone bus}
+        \end{figure}
+    \end{column}
+    \end{columns}    
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{AXI-Lite and AXI}
+\begin{frame}{Handshake in AXI-Lite and AXI}
+    \begin{columns}
+        \begin{column}{0.4\textwidth}
+            \begin{itemize}
+                \item Acknowledge generation: state-machine controls acknowledge signal in CPU
+                \item Selection mechanism: state-machine and selection register assign in selection signal to select memory 
+            \end{itemize}
+        \end{column}
+    \begin{column}{0.6\textwidth}
+        \begin{figure}
+            \centering
+            \includegraphics[width=0.7\textwidth]{src/3/img/axi.png}
+            \caption{Connection of handshake and selection signals in AXI and AXI-Lite bus protocols}
+        \end{figure}
+    \end{column}
+    \end{columns} 
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Fault Injection Result}
+\begin{frame}{Fault Injection Result}
+\begin{table}
+\centering
+\caption{Fault injection results for each bus and fault model in V0}
+\label{Vunerabilities on 3 buses}
+\begin{tabular}{llrrrr}
+\toprule
+bus & fault model & crash & success & change & silence \\
+\midrule
+& Bit-Flip & 47 & 37 & 124 & 2366 \\
+& Manipulate Register   & 320 & 43 & 161 & 6496 \\
+& 2 Bit-Flips & 547 & 272 & 914 & 11137 \\
+\multirow{-4}{*}{Wishbone}  & Manipulate Two Registers & 5178 & 778 & 2891 & 63225 \\
+\midrule
+& Bit-Flip & 282 & 4 & 1913 & 11577 \\
+& Manipulate Register & 391 & 6 & 2589 & 29942 \\
+& 2 Bit-Flips & 10725 & 153 & 69811 & 194831 \\
+\multirow{-4}{*}{AXI-Lite}  &  Manipulate Two Registers & 36215 & 549 & 224347 & 1236105 \\
+\midrule
+& Bit-Flip & 158 & 4 & 4833 & 34269 \\
+& Manipulate Register   & 435 & 6 & 6723 & 90996 \\
+& 2 Bit-Flips & 14760 & 333 & 428382 & 1421565 \\
+\multirow{-4}{*}{AXI} &  Manipulate Two Registers & 104655 & 1328 & 1514455 & 9762850 \\         
+\bottomrule  
+\end{tabular}
+\end{table}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Result Analysis}
+
+\begin{frame}{Analysis on Wishbone}
+    \begin{columns}
+        \begin{column}{0.4\textwidth}
+            \begin{itemize}
+                \item ACK register is the most frequently targeted in successful attacks across all fault models.
+            \end{itemize}
+        \end{column}
+    \begin{column}{0.6\textwidth}
+        \begin{table}
+        \centering
+        \caption{Distribution of successful register combination attacks under different fault models on the Wishbone Bus}
+        \label{Percentage on Wishbone}
+          \resizebox{\columnwidth}{!}{
+        \begin{tabular}{lcccc}
+        \hline
+        Fault model & \texttt{ack} & \texttt{sel} & \texttt{ack} \& \texttt{grant} & \texttt{ack} \& \texttt{sel} \\ 
+        \hline
+        Bit-flip & 94.59\% & 5.41\% & - & - \\
+        Manipulate Register & 81.40\% & 18.60\% & - & - \\
+        2 Bit-Flips & 94.12\% & 3.68\% & 1.10\% & 1.10\% \\
+        Manipulate Two Registers & 85.73\% & 12.34\% & 0.38\% & 1.55\% \\
+        \hline
+        \end{tabular}
+        }
+        \end{table}
+    \end{column}
+    \end{columns} 
+\end{frame}
+
+\begin{frame}{Analysis on AXI-Lite}
+    \begin{columns}
+        \begin{column}{0.35\textwidth}
+            \begin{itemize}
+                \item State register is the primary target for successful attacks across all fault models.
+            \end{itemize}
+        \end{column}
+    \begin{column}{0.65\textwidth}
+        \begin{table}
+        \centering
+        \caption{Distribution of successful register combination attacks under different fault models on the AXI-Lite Bus}
+        \label{Percentage on Lite}        
+        \begin{tabularx}{\textwidth}{|l|X|X|X|}
+        \hline
+        Fault model & state & selection driver \& state & completion flag \& state \\
+        \hline
+        Bit-flip & 100.00\% & - & - \\
+        Manipulate Register & 100.00\% & - & - \\
+        2 Bit-Flips & 98.02\% & 1.32\% & 0.66\% \\
+        Manipulate Two Registers & 98.36\% & 1.46\% & 0.18\% \\
+        \hline
+        \end{tabularx}        
+        \end{table}
+    \end{column}
+    \end{columns}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}{Fault effect}
+\begin{table}
+\centering
+\label{compare bus}
+
+\begin{tabularx}{\textwidth}{|l|X|X|X|}
+\hline
+                                          & Wishbone         & AXI-Lite         & AXI          \\
+\hline                                          
+\multirow{3}{*}{Bit-flip}                 & instruction skip & data reset       & data reset   \\
+                                          & data reset       &                  & data misread \\
+                                          & data multiread   &                  &              \\
+\hline                                          
+\multirow{4}{*}{Manipulate Register}      & instruction skip & data reset       & data reset   \\
+                                          & data reset       & data misread     & data misread \\
+                                          & data misread     &                  &              \\
+                                          & data multiread   &                  &              \\
+\hline                                          
+\multirow{4}{*}{2 Bit-Flips}              & instruction skip & instruction skip & data reset   \\
+                                          & data reset       & data reset       & data misread \\
+                                          & data misread     & data misread     &              \\
+                                          & data multiread   & data multiread   &              \\
+\hline                                          
+\multirow{4}{*}{Manipulate Two Registers} & instruction skip & data reset       & data reset   \\
+                                          & data reset       & instruction skip & data misread \\
+                                          & data misread     & data misread     &              \\
+                                          & data multiread   & data multiread   &             \\
+\hline                                          
+\end{tabularx}
+
+\end{table}
+\end{frame}
+
+\begin{frame}{Wishbone: Success Distribution}
+    \begin{columns}
+        \begin{column}{0.45\textwidth}
+            \begin{itemize}
+                \item Instruction- vs. data-related fault ratios under “Manipulate Two Registers”.
+                \item AXI-Lite/AXI: Frequent data resets (to 0) can unintentionally match the user PIN, making data corruption the main attack pathway.
+            \end{itemize}
+        \end{column}
+    \begin{column}{0.55\textwidth}
+        \begin{table}
+        \centering
+        \caption{Percentage of data or instruction vulnerabilities by manipulate 2 registers attacks across the three bus architectures}
+        \label{Percentage data}
+        \begin{tabularx}{\textwidth}{|l|X|X|X|}
+        \hline
+        & Wishbone & AXI-Lite & AXI \\
+        \hline
+        Data related & 17.22\% & 97.27\% & 100\% \\
+        Instruction related & 82.78\% & 2.73\% & 0\% \\
+        \hline
+        \end{tabularx}
+        \end{table}
+    \end{column}
+    \end{columns}
+\end{frame}
